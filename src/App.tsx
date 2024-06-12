@@ -31,6 +31,9 @@ type State = {
   isLoading: boolean
 }
 
+/**
+ * Create column definitions based on the entity type
+ */
 function createColDefs(entity: EntityType) {
   switch (entity) {
     case EntityType.Starships:
@@ -52,6 +55,20 @@ function createColDefs(entity: EntityType) {
           header: "Passengers",
         },
       ]
+    case EntityType.People:
+      return [
+        {
+          accessorKey: "name",
+          header: "Name",
+        },
+        {
+          accessorKey: "height",
+          header: "Height",
+        },
+        {
+          accessorKey: "mass",
+          header: "Mass",
+        }]
     default:
       return []
   }
@@ -140,7 +157,6 @@ function App() {
     if (!film || !state.entityType) {
       return;
     }
-    console.log("film", film)
 
     const ids = film[state.entityType].map(url => url.split("/")[5]) ?? []
     setState(prev => ({
@@ -159,6 +175,7 @@ function App() {
   return (
     <main className="text-left">
       <header className="flex gap-2">
+        {/* Select a film */}
         <select
           defaultValue={state.films[0]?.title}
           className="select w-full max-w-xs"
@@ -176,6 +193,7 @@ function App() {
           }
         </select>
 
+        {/* Select an entity to get details */}
         <select
           className="select w-full max-w-xs"
           value={state.entityType || undefined}
@@ -192,10 +210,12 @@ function App() {
             {EntityType.People}
           </option>
         </select>
-
       </header>
+      {/* Display loading state */}
       {state.isLoading && <div className="w-full p-4 flex gap-4">Loading... <span className=" loading loading-ring loading-xs"></span></div>}
-      <DataTable columns={createColDefs(EntityType.Starships)} data={state.details} />
+
+      {/* Display table */}
+      <DataTable columns={createColDefs(state.entityType)} data={state.details} />
     </main>
   )
 }
