@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { DataTable } from "./components/DataTable"
 import "./App.css"
+import { useQuery } from "@tanstack/react-query"
 
 
 const SW_API = "https://swapi.dev/api/"
@@ -24,11 +25,9 @@ type Film = {
 }
 
 type State = {
-  films: Film[],
   ids: string[],
   entityType: EntityType,
   details: StarShip[],
-  isLoading: boolean
 }
 
 /**
@@ -76,46 +75,12 @@ function createColDefs(entity: EntityType) {
 
 function App() {
   const [state, setState] = useState<State>({
-    films: [],
     ids: [],
     entityType: EntityType.Starships,
     details: [],
-    isLoading: false
   })
 
-  useEffect(function fetchFilms() {
-    // Set loading state
-    setState(prev => ({
-      ...prev,
-      isLoading: true
-    }))
-
-    // Fetch films
-    fetch(SW_API + "films").then(response => {
-      if (!response.ok) {
-        console.warn("error")
-      }
-      return response.json()
-    })
-      // Set films
-      .then((data: {
-        results: Film[]
-      }) => {
-        setState(prev => ({
-          ...prev,
-          films: data.results,
-        }))
-      })
-      // Catch errors
-      .catch(e => {
-        console.warn("error", e.message)
-      })
-      // Finally, set loading state to false
-      .finally(() => setState(prev => ({
-        ...prev,
-        isLoading: false,
-      })))
-  }, [])
+  const films = useFetchFilms();
 
   useEffect(function fetchDetails() {
     // If there are no ids, return
@@ -153,7 +118,7 @@ function App() {
   }, [state.entityType, state.ids])
 
   function handleFilmChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const film = state.films.find(f => f.title === e.currentTarget.value)
+    const film = films?.data?.find(f => f.title === e.currentTarget.value)
     if (!film || !state.entityType) {
       return;
     }
@@ -173,18 +138,18 @@ function App() {
   }
 
   return (
-    <main className="text-left">
-      <header className="flex gap-2">
+    <main className="text-left bg-gray-200 p-4 h-screen">
+      <header className="flex gap-2  p-2 rounded-md mb-4">
         {/* Select a film */}
         <select
-          defaultValue={state.films[0]?.title}
+          defaultValue={films.data?.[0]?.title ?? ""}
           className="select w-full max-w-xs"
           onChange={handleFilmChange}>
           <option selected disabled>
             Choose a film
           </option>
           {
-            state.films.map(film => {
+            films.data?.map(film => {
               return (
                 <option
                   key={film.title}>{film.title}</option>
@@ -210,14 +175,30 @@ function App() {
             {EntityType.People}
           </option>
         </select>
+        {films.isLoading && <span className="loading loading-ring loading-x text-secondary"></span>}
+
       </header>
-      {/* Display loading state */}
-      {state.isLoading && <div className="w-full p-4 flex gap-4">Loading... <span className=" loading loading-ring loading-xs"></span></div>}
 
       {/* Display table */}
-      <DataTable columns={createColDefs(state.entityType)} data={state.details} />
+      <DataTable columns={createColDefs(state.entityType)} data={state.details} className=" bg-white rounded-lg" />
     </main>
   )
 }
 
 export default App
+
+
+const QUERY_KEY = ['Films'];
+
+const fetchFilms = async (): Promise<Film[]> => {
+  const response = await fetch(SW_API + "films");
+  const data = await response.json();
+  return data.results;
+};
+
+export const useFetchFilms = () => {
+  return useQuery<Film[], Error>({
+    queryKey: QUERY_KEY,
+    queryFn: () => fetchFilms(),
+  });
+};
