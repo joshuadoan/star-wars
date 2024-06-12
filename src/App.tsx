@@ -115,7 +115,7 @@ function App() {
           isLoading: false
         }))
       })
-  }, [state.entityType, state.ids])
+  }, [state.entityType, state.ids, films.isRefetching])
 
   function handleFilmChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const film = films?.data?.find(f => f.title === e.currentTarget.value)
